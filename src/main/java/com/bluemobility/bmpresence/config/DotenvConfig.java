@@ -1,24 +1,37 @@
 package com.bluemobility.bmpresence.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import jakarta.annotation.PostConstruct;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 
-@Configuration
-public class DotenvConfig {
+import java.util.HashMap;
+import java.util.Map;
 
-    @PostConstruct
-    public void loadEnv() {
+public class DotenvConfig implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
+
+    @Override
+    public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+        ConfigurableEnvironment environment = event.getEnvironment();
         try {
             Dotenv dotenv = Dotenv.configure()
-                    .directory(".")
+                    .directory(System.getProperty("user.dir"))
                     .ignoreIfMissing()
                     .load();
 
-            // Cargar las variables de entorno en el sistema
-            dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+            Map<String, Object> envMap = new HashMap<>();
+            dotenv.entries().forEach(entry -> {
+                envMap.put(entry.getKey(), entry.getValue());
+                System.out.println("✓ Cargada variable: " + entry.getKey() + " = "
+                        + (entry.getKey().contains("PASSWORD") ? "***" : entry.getValue()));
+            });
+
+            environment.getPropertySources().addFirst(new MapPropertySource("dotenvProperties", envMap));
+            System.out.println("✓ Variables .env cargadas ANTES de inicializar Spring");
+
         } catch (Exception e) {
-            System.out.println("No se pudo cargar el archivo .env, usando variables de entorno del sistema");
+            System.err.println("✗ Error cargando .env: " + e.getMessage());
         }
     }
 }
