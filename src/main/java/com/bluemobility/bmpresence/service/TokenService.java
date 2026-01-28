@@ -139,15 +139,10 @@ public class TokenService {
                 log.info("Renovando token expirado para usuario ID: {}", userId);
             }
 
-            if (userId != null) {
-                String newToken = generateToken(userId);
-                log.info("Token renovado exitosamente para usuario ID: {} (token anterior estaba {})",
-                        userId, isExpired ? "expirado" : "próximo a expirar");
-                return newToken;
-            }
-
-            log.warn("No se pudo extraer userId del token para renovación");
-            return null;
+            String newToken = generateToken(userId);
+            log.info("Token renovado exitosamente para usuario ID: {} (token anterior estaba {})",
+                    userId, isExpired ? "expirado" : "próximo a expirar");
+            return newToken;
         } catch (JwtException e) {
             log.error("Error renovando token - Token inválido o corrupto: {}", e.getMessage());
             return null;
