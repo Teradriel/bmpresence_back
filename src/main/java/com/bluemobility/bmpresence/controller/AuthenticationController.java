@@ -3,8 +3,10 @@ package com.bluemobility.bmpresence.controller;
 import com.bluemobility.bmpresence.model.User;
 import com.bluemobility.bmpresence.service.AuthenticationService;
 import com.bluemobility.bmpresence.service.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @CrossOrigin
+@Slf4j
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -99,7 +102,20 @@ public class AuthenticationController {
     }
 
     @PostMapping("/renew-token")
-    public ResponseEntity<?> renewToken(@RequestBody RenewTokenRequest request) {
+    public ResponseEntity<?> renewToken(@RequestBody RenewTokenRequest request, HttpServletRequest httpRequest) {
+        // Log de la petición para rastrear llamadas múltiples
+        String userAgent = httpRequest.getHeader("User-Agent");
+        String referer = httpRequest.getHeader("Referer");
+        log.warn("⚠️ Llamada a /renew-token - User-Agent: {}, Referer: {}", userAgent, referer);
+
+        // Validar que se envió un token
+        if (request.getToken() == null || request.getToken().isEmpty()) {
+            log.warn("Intento de renovar sin proporcionar token");
+            return ResponseEntity.badRequest().body(new ErrorResponse(
+                    false,
+                    "Token non fornito"));
+        }
+
         String newToken = tokenService.renewToken(request.getToken());
 
         if (newToken != null) {
@@ -108,9 +124,10 @@ public class AuthenticationController {
                     "Token rinnovato con successo",
                     newToken));
         } else {
-            return ResponseEntity.badRequest().body(new ErrorResponse(
+            // Retornar 401 para que el frontend sepa que debe hacer login nuevamente
+            return ResponseEntity.status(401).body(new ErrorResponse(
                     false,
-                    "Impossibile rinnovare il token"));
+                    "Impossibile rinnovare il token - token invalido o corrotto"));
         }
     }
 
@@ -125,7 +142,12 @@ public class AuthenticationController {
         String token = authHeader.substring(7);
         boolean isValid = tokenService.isTokenValid(token);
 
-        return ResponseEntity.ok(new ValidationResponse(isValid));
+        if (isValid) {
+            return ResponseEntity.ok(new ValidationResponse(true));
+        } else {
+            // Retornar 401 si el token no es válido
+            return ResponseEntity.status(401).body(new ValidationResponse(false));
+        }
     }
 
     @GetMapping("/current-user")

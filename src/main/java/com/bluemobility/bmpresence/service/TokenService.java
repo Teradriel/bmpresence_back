@@ -97,15 +97,62 @@ public class TokenService {
 
     public String renewToken(String oldToken) {
         try {
-            Integer userId = getUserIdFromToken(oldToken);
+            // Validar que el token no esté vacío
+            if (oldToken == null || oldToken.isEmpty()) {
+                log.warn("Intento de renovar token vacío o nulo");
+                return null;
+            }
+
+            // Primero verificar si el token todavía es válido
+            // No tiene sentido renovar un token que aún no ha expirado
+            Integer userId;
+            Date expirationDate;
+            boolean isExpired = false;
+
+            try {
+                Claims claims = Jwts.parser()
+                        .verifyWith(getSigningKey())
+                        .build()
+                        .parseSignedClaims(oldToken)
+                        .getPayload();
+                userId = Integer.parseInt(claims.getSubject());
+                expirationDate = claims.getExpiration();
+
+                // Calcular tiempo restante hasta la expiración
+                long timeUntilExpiration = expirationDate.getTime() - System.currentTimeMillis();
+                long hoursUntilExpiration = timeUntilExpiration / (1000 * 60 * 60);
+
+                // Solo renovar si el token expira en menos de 24 horas
+                if (timeUntilExpiration > 0 && hoursUntilExpiration >= 24) {
+                    log.warn("Intento de renovar token válido que expira en {} horas. Usuario ID: {}. " +
+                            "No es necesario renovar aún.", hoursUntilExpiration, userId);
+                    return null;
+                }
+
+                log.info("Renovando token que expira en {} horas para usuario ID: {}",
+                        hoursUntilExpiration, userId);
+
+            } catch (ExpiredJwtException e) {
+                // Si el token está expirado, aún podemos obtener el userId de las claims
+                userId = Integer.parseInt(e.getClaims().getSubject());
+                isExpired = true;
+                log.info("Renovando token expirado para usuario ID: {}", userId);
+            }
+
             if (userId != null) {
                 String newToken = generateToken(userId);
-                log.info("Token renovado exitosamente para usuario ID: {}", userId);
+                log.info("Token renovado exitosamente para usuario ID: {} (token anterior estaba {})",
+                        userId, isExpired ? "expirado" : "próximo a expirar");
                 return newToken;
             }
+
+            log.warn("No se pudo extraer userId del token para renovación");
+            return null;
+        } catch (JwtException e) {
+            log.error("Error renovando token - Token inválido o corrupto: {}", e.getMessage());
             return null;
         } catch (Exception e) {
-            log.error("Error renovando token", e);
+            log.error("Error inesperado renovando token", e);
             return null;
         }
     }
