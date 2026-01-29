@@ -36,7 +36,7 @@ Spring Boot backend for managing users, presence resources, and presence appoint
 - **Date range** queries.
 - **Resource-specific** queries.
 - **Conflict prevention** per resource/day for the same subject.
-- **Soft delete** and **hard delete** support.
+- **Hard delete** (permanent removal from database).
 
 ### Security
 
@@ -91,8 +91,7 @@ Spring Boot backend for managing users, presence resources, and presence appoint
 - `GET  /api/appointments/resource/{resourceId}`
 - `POST /api/appointments`
 - `PUT  /api/appointments/{id}`
-- `DELETE /api/appointments/{id}`
-- `DELETE /api/appointments/{id}/hard`
+- `DELETE /api/appointments/{id}` (permanent deletion)
 
 ## Configuration Notes
 

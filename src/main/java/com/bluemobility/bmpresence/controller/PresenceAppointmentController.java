@@ -65,12 +65,6 @@ public class PresenceAppointmentController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/hard")
-    public ResponseEntity<Void> hardDeleteAppointment(@PathVariable Integer id) {
-        appointmentService.hardDelete(id);
-        return ResponseEntity.noContent().build();
-    }
-
     @ExceptionHandler(AppointmentConflictException.class)
     public ResponseEntity<String> handleConflictException(AppointmentConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
