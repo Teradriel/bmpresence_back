@@ -1,0 +1,24 @@
+# Ignorar archivos innecesarios para reducir el contexto de build
+target/
+!target/*.jar
+.git/
+.gitignore
+*.md
+*.log
+.env
+.env.local
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+*.coverage

@@ -61,13 +61,6 @@ public class PresenceAppointmentService {
 
     @Transactional
     public void delete(Integer id) {
-        PresenceAppointment appointment = findById(id);
-        appointment.setActive(false);
-        appointmentRepository.save(appointment);
-    }
-
-    @Transactional
-    public void hardDelete(Integer id) {
         appointmentRepository.deleteById(id);
     }
 
