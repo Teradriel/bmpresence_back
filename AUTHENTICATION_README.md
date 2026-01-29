@@ -1,41 +1,41 @@
-# Servicios de Autenticación - BMPresence
+# Authentication Services - BMPresence
 
-## Descripción
+## Description
 
-Se han añadido dos servicios principales para la autenticación y gestión de sesiones:
+Two main services were added for authentication and session management:
 
 ### 1. **TokenService**
 
-Servicio que gestiona la generación, validación y renovación de tokens JWT (JSON Web Tokens).
+Service that handles generation, validation, and renewal of JWT (JSON Web Tokens).
 
-**Características:**
+**Features:**
 
-- Generación de tokens JWT con expiración de 30 días
-- Validación de tokens
-- Extracción del ID de usuario desde el token
-- Renovación de tokens
-- Implementación segura con firma HMAC-SHA256
+- JWT generation with 30-day expiration
+- Token validation
+- User ID extraction from token
+- Token renewal
+- Secure implementation with HMAC-SHA256 signature
 
 ### 2. **AuthenticationService**
 
-Servicio principal de autenticación que gestiona el ciclo de vida de las sesiones de usuario.
+Main authentication service that manages the user session lifecycle.
 
-**Características:**
+**Features:**
 
-- Login con username/password
-- Registro de nuevos usuarios
-- Cambio de contraseña
+- Login with username/password
+- Register new users
+- Change password
 - Logout
-- Restauración de sesión (mantener sesión abierta)
-- Hashing seguro de contraseñas con salt (SHA-256)
-- Validación de usuarios activos
-- Actualización automática de `lastActiveAt`
+- Session restore (keep session open)
+- Secure password hashing with salt (SHA-256)
+- Active user validation
+- Automatic `lastActiveAt` updates
 
 ## API Endpoints
 
 ### POST `/api/auth/login`
 
-Inicia sesión con username y contraseña.
+Login with username and password.
 
 **Request:**
 
@@ -46,7 +46,7 @@ Inicia sesión con username y contraseña.
 }
 ```
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -67,7 +67,7 @@ Inicia sesión con username y contraseña.
 
 ### POST `/api/auth/register`
 
-Registra un nuevo usuario.
+Register a new user.
 
 **Request:**
 
@@ -82,7 +82,7 @@ Registra un nuevo usuario.
 }
 ```
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -93,7 +93,7 @@ Registra un nuevo usuario.
 
 ### POST `/api/auth/logout`
 
-Cierra la sesión del usuario actual.
+Logs out the current user.
 
 **Response:**
 
@@ -106,7 +106,7 @@ Cierra la sesión del usuario actual.
 
 ### POST `/api/auth/change-password`
 
-Cambia la contraseña del usuario autenticado.
+Change the authenticated user's password.
 
 **Request:**
 
@@ -117,7 +117,7 @@ Cambia la contraseña del usuario autenticado.
 }
 ```
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -128,7 +128,7 @@ Cambia la contraseña del usuario autenticado.
 
 ### POST `/api/auth/restore-session`
 
-Restaura una sesión usando un token almacenado (para mantener la sesión abierta).
+Restore a session using a stored token (to keep the session open).
 
 **Request:**
 
@@ -138,7 +138,7 @@ Restaura una sesión usando un token almacenado (para mantener la sesión abiert
 }
 ```
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -156,7 +156,7 @@ Restaura una sesión usando un token almacenado (para mantener la sesión abiert
 
 ### POST `/api/auth/renew-token`
 
-Renueva un token existente (extiende su validez por otros 30 días).
+Renew an existing token (extends its validity by 30 more days).
 
 **Request:**
 
@@ -166,7 +166,7 @@ Renueva un token existente (extiende su validez por otros 30 días).
 }
 ```
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -178,7 +178,7 @@ Renueva un token existente (extiende su validez por otros 30 días).
 
 ### GET `/api/auth/validate-token`
 
-Valida si un token es válido.
+Validate whether a token is valid.
 
 **Headers:**
 
@@ -196,9 +196,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### GET `/api/auth/current-user`
 
-Obtiene el usuario actualmente autenticado.
+Get the currently authenticated user.
 
-**Response (éxito):**
+**Response (success):**
 
 ```json
 {
@@ -211,12 +211,12 @@ Obtiene el usuario actualmente autenticado.
 }
 ```
 
-## Flujo de Uso para Mantener Sesión Abierta
+## Usage Flow to Keep Session Open
 
-### 1. **Inicio de Sesión**
+### 1. **Login**
 
 ```javascript
-// Cliente realiza login
+// Client performs login
 const response = await fetch("/api/auth/login", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -224,15 +224,15 @@ const response = await fetch("/api/auth/login", {
 });
 
 const data = await response.json();
-// Guardar el token en localStorage o sessionStorage
+// Store the token in localStorage or sessionStorage
 localStorage.setItem("authToken", data.token);
 localStorage.setItem("userId", data.user.id);
 ```
 
-### 2. **Restaurar Sesión al Cargar la App**
+### 2. **Restore Session on App Load**
 
 ```javascript
-// Al iniciar la aplicación, verificar si hay un token guardado
+// On app start, check if a stored token exists
 const token = localStorage.getItem("authToken");
 
 if (token) {
@@ -244,19 +244,19 @@ if (token) {
 
   if (response.ok) {
     const data = await response.json();
-    // Sesión restaurada, el usuario sigue logueado
-    console.log("Usuario:", data.user);
+    // Session restored, user stays logged in
+    console.log("User:", data.user);
   } else {
-    // Token expirado o inválido, pedir login nuevamente
+    // Token expired or invalid, ask to login again
     localStorage.removeItem("authToken");
   }
 }
 ```
 
-### 3. **Renovar Token Periódicamente (Opcional)**
+### 3. **Renew Token Periodically (Optional)**
 
 ```javascript
-// Renovar el token cada 25 días para evitar que expire
+// Renew token every 25 days to prevent expiration
 setInterval(
   async () => {
     const token = localStorage.getItem("authToken");
@@ -274,30 +274,30 @@ setInterval(
     }
   },
   25 * 24 * 60 * 60 * 1000,
-); // 25 días en milisegundos
+); // 25 days in milliseconds
 ```
 
-## Seguridad
+## Security
 
-### Contraseñas
+### Passwords
 
-- Las contraseñas se hashean usando **SHA-256**
-- Cada contraseña tiene un **salt único** de 32 bytes
-- El salt se genera usando `SecureRandom`
-- Nunca se almacenan contraseñas en texto plano
+- Passwords are hashed using **SHA-256**
+- Each password has a unique 32-byte **salt**
+- The salt is generated using `SecureRandom`
+- Passwords are never stored in plain text
 
-### Tokens JWT
+### JWT Tokens
 
-- Los tokens están firmados con **HMAC-SHA256**
-- La clave secreta debe configurarse en variables de entorno para producción
-- Los tokens expiran después de 30 días
-- Incluyen el ID del usuario en el payload
+- Tokens are signed with **HMAC-SHA256**
+- The secret key should be configured via environment variables for production
+- Tokens expire after 30 days
+- The user ID is included in the payload
 
-## Configuración
+## Configuration
 
-### Variables de Entorno (Recomendado para Producción)
+### Environment Variables (Recommended for Production)
 
-Crea un archivo `.env` o configura las variables de entorno:
+Create a `.env` file or configure environment variables:
 
 ```properties
 JWT_SECRET=tu-clave-secreta-super-segura-de-al-menos-256-bits
@@ -305,18 +305,18 @@ JWT_SECRET=tu-clave-secreta-super-segura-de-al-menos-256-bits
 
 ### application.properties
 
-La configuración por defecto está en `application.properties`:
+Default configuration is in `application.properties`:
 
 ```properties
 jwt.secret=${JWT_SECRET:bmpresence-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-security}
 jwt.expiration.days=30
 ```
 
-**⚠️ IMPORTANTE:** Cambia la clave secreta JWT en producción. Usa una clave aleatoria de al menos 256 bits.
+**⚠️ IMPORTANT:** Change the JWT secret key in production. Use a random key of at least 256 bits.
 
-## Dependencias Añadidas
+## Dependencies Added
 
-Se han añadido las siguientes dependencias al `pom.xml`:
+The following dependencies were added to `pom.xml`:
 
 ```xml
 <dependency>
@@ -338,7 +338,7 @@ Se han añadido las siguientes dependencias al `pom.xml`:
 </dependency>
 ```
 
-## Ejemplo de Uso Completo
+## Full Usage Example
 
 ```javascript
 // LOGIN
@@ -397,24 +397,24 @@ async function logout() {
   localStorage.removeItem("user");
 }
 
-// USO EN LA APP
+// APP USAGE
 async function initApp() {
-  // Intentar restaurar sesión al cargar
+  // Try to restore session on load
   const user = await restoreSession();
 
   if (user) {
-    console.log("Sesión restaurada:", user);
-    // Mostrar interfaz autenticada
+    console.log("Session restored:", user);
+    // Show authenticated UI
   } else {
-    console.log("No hay sesión activa");
-    // Mostrar login
+    console.log("No active session");
+    // Show login
   }
 }
 ```
 
 ## Testing
 
-Puedes probar los endpoints con curl o Postman:
+You can test the endpoints with curl or Postman:
 
 ```bash
 # Login
@@ -425,11 +425,11 @@ curl -X POST http://localhost:8080/api/auth/login \
 # Restore Session
 curl -X POST http://localhost:8080/api/auth/restore-session \
   -H "Content-Type: application/json" \
-  -d '{"token":"tu-token-aqui"}'
+  -d '{"token":"your-token-here"}'
 ```
 
-## Notas
+## Notes
 
-- El servicio mantiene un `currentUser` en memoria. Para aplicaciones multi-instancia, considera usar una cache distribuida (Redis).
-- Los tokens se validan solo por su firma y expiración. No hay invalidación activa de tokens.
-- Para mayor seguridad, considera implementar refresh tokens separados.
+- The service keeps a `currentUser` in memory. For multi-instance apps, consider using a distributed cache (Redis).
+- Tokens are validated only by signature and expiration. There is no active token invalidation.
+- For higher security, consider implementing separate refresh tokens.
