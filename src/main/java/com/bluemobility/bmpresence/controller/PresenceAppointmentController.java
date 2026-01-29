@@ -1,5 +1,6 @@
 package com.bluemobility.bmpresence.controller;
 
+import com.bluemobility.bmpresence.exception.AppointmentConflictException;
 import com.bluemobility.bmpresence.model.PresenceAppointment;
 import com.bluemobility.bmpresence.service.PresenceAppointmentService;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +69,11 @@ public class PresenceAppointmentController {
     public ResponseEntity<Void> hardDeleteAppointment(@PathVariable Integer id) {
         appointmentService.hardDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(AppointmentConflictException.class)
+    public ResponseEntity<String> handleConflictException(AppointmentConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

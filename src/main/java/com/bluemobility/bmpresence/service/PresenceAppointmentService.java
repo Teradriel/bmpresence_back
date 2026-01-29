@@ -1,11 +1,13 @@
 package com.bluemobility.bmpresence.service;
 
+import com.bluemobility.bmpresence.exception.AppointmentConflictException;
 import com.bluemobility.bmpresence.model.PresenceAppointment;
 import com.bluemobility.bmpresence.repository.PresenceAppointmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -37,12 +39,15 @@ public class PresenceAppointmentService {
 
     @Transactional
     public PresenceAppointment create(PresenceAppointment appointment) {
+        validateNoConflictingAppointment(appointment, null);
         return appointmentRepository.save(appointment);
     }
 
     @Transactional
     public PresenceAppointment update(Integer id, PresenceAppointment appointmentDetails) {
         PresenceAppointment appointment = findById(id);
+
+        validateNoConflictingAppointment(appointmentDetails, id);
 
         appointment.setSubject(appointmentDetails.getSubject());
         appointment.setStartTime(appointmentDetails.getStartTime());
@@ -64,5 +69,37 @@ public class PresenceAppointmentService {
     @Transactional
     public void hardDelete(Integer id) {
         appointmentRepository.deleteById(id);
+    }
+
+    private void validateNoConflictingAppointment(PresenceAppointment appointment, Integer currentAppointmentId) {
+        if (appointment.getSubject() == null || appointment.getResourceIds() == null
+                || appointment.getResourceIds().isEmpty()) {
+            return;
+        }
+
+        LocalDate appointmentDate = appointment.getStartTime().toLocalDate();
+        LocalDateTime startOfDay = appointmentDate.atStartOfDay();
+        LocalDateTime endOfDay = appointmentDate.plusDays(1).atStartOfDay();
+
+        for (Integer resourceId : appointment.getResourceIds()) {
+            List<PresenceAppointment> conflicts = appointmentRepository.findConflictingAppointments(
+                    appointment.getSubject(),
+                    resourceId,
+                    startOfDay,
+                    endOfDay);
+
+            // Filtrar el appointment actual si estamos actualizando
+            if (currentAppointmentId != null) {
+                conflicts = conflicts.stream()
+                        .filter(a -> !a.getId().equals(currentAppointmentId))
+                        .toList();
+            }
+
+            if (!conflicts.isEmpty()) {
+                throw new AppointmentConflictException(
+                        String.format("La persona '%s' ya tiene un appointment asignado para el recurso %d el día %s",
+                                appointment.getSubject(), resourceId, appointmentDate));
+            }
+        }
     }
 }
