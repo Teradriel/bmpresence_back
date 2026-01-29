@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "presence_appointments")
+@Table(name = "PresenceAppointments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,24 +18,42 @@ public class PresenceAppointment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "Id")
     private Integer id;
 
+    @Column(name = "Subject")
     private String subject;
 
-    @Column(name = "start_time")
+    @Column(name = "StartTime", nullable = false)
     private LocalDateTime startTime;
 
-    @Column(name = "end_time")
+    @Column(name = "EndTime", nullable = false)
     private LocalDateTime endTime;
 
-    @Column(name = "recurrence_rule")
+    @Column(name = "RecurrenceRule", columnDefinition = "TEXT")
     private String recurrenceRule;
 
-    @Column(nullable = false)
+    @Column(name = "Active", nullable = false)
     private Boolean active = true;
 
-    @ElementCollection
-    @CollectionTable(name = "appointment_resources", joinColumns = @JoinColumn(name = "appointment_id"))
-    @Column(name = "resource_id")
+    @Column(name = "CreatedAt", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "UpdatedAt")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "ResourceIds", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<Integer> resourceIds;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
