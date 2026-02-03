@@ -1,5 +1,6 @@
 package com.bluemobility.bmpresence.controller;
 
+import com.bluemobility.bmpresence.dto.UserDTO;
 import com.bluemobility.bmpresence.model.User;
 import com.bluemobility.bmpresence.service.AuthenticationService;
 import com.bluemobility.bmpresence.service.TokenService;
@@ -29,7 +30,7 @@ public class AuthenticationController {
             return ResponseEntity.ok(new LoginResponse(
                     true,
                     response.getMessage(),
-                    response.getUser(),
+                    UserDTO.fromUser(response.getUser()),
                     response.getToken()));
         } else {
             return ResponseEntity.badRequest().body(new ErrorResponse(
@@ -93,7 +94,7 @@ public class AuthenticationController {
             return ResponseEntity.ok(new SessionResponse(
                     true,
                     "Sessione restaurata con successo",
-                    currentUser));
+                    UserDTO.fromUser(currentUser)));
         } else {
             return ResponseEntity.badRequest().body(new ErrorResponse(
                     false,
@@ -155,7 +156,7 @@ public class AuthenticationController {
         User currentUser = authenticationService.getCurrentUser();
 
         if (currentUser != null) {
-            return ResponseEntity.ok(currentUser);
+            return ResponseEntity.ok(UserDTO.fromUser(currentUser));
         } else {
             return ResponseEntity.badRequest().body(new ErrorResponse(
                     false,
@@ -200,7 +201,7 @@ public class AuthenticationController {
     static class LoginResponse {
         private final boolean success;
         private final String message;
-        private final User user;
+        private final UserDTO user;
         private final String token;
     }
 
@@ -220,7 +221,7 @@ public class AuthenticationController {
     static class SessionResponse {
         private final boolean success;
         private final String message;
-        private final User user;
+        private final UserDTO user;
     }
 
     @Data
