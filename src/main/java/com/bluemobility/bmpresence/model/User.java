@@ -1,5 +1,6 @@
 package com.bluemobility.bmpresence.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,9 +28,11 @@ public class User {
     @Column(name = "Email", nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(name = "HashedPassword")
     private String hashedPassword;
 
+    @JsonIgnore
     @Column(name = "Salt")
     private String salt;
 
