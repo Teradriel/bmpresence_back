@@ -30,7 +30,7 @@ public class AuthenticationController {
             return ResponseEntity.ok(new LoginResponse(
                     true,
                     response.getMessage(),
-                    UserDTO.fromUser(response.getUser()),
+                    response.getUser(),
                     response.getToken()));
         } else {
             return ResponseEntity.badRequest().body(new ErrorResponse(

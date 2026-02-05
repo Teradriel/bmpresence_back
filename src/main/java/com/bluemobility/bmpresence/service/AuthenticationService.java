@@ -1,5 +1,6 @@
 package com.bluemobility.bmpresence.service;
 
+import com.bluemobility.bmpresence.dto.UserDTO;
 import com.bluemobility.bmpresence.model.User;
 import com.bluemobility.bmpresence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -188,7 +189,7 @@ public class AuthenticationService {
             return new AuthenticationResponse(
                     true,
                     message,
-                    user,
+                    UserDTO.fromUser(user),
                     token);
         } catch (Exception e) {
             log.error("Error durante el inicio de sesión para usuario: {}", username, e);
@@ -311,7 +312,7 @@ public class AuthenticationService {
             return new AuthenticationResponse(
                     true,
                     "Utente registrato con successo",
-                    savedUser,
+                    UserDTO.fromUser(savedUser),
                     null);
         } catch (Exception e) {
             log.error("Error durante el registro de usuario: {}", username, e);
@@ -377,10 +378,10 @@ public class AuthenticationService {
     public static class AuthenticationResponse {
         private final boolean success;
         private final String message;
-        private final User user;
+        private final UserDTO user;
         private final String token;
 
-        public AuthenticationResponse(boolean success, String message, User user, String token) {
+        public AuthenticationResponse(boolean success, String message, UserDTO user, String token) {
             this.success = success;
             this.message = message;
             this.user = user;
@@ -395,7 +396,7 @@ public class AuthenticationService {
             return message;
         }
 
-        public User getUser() {
+        public UserDTO getUser() {
             return user;
         }
 

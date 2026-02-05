@@ -17,6 +17,7 @@ public class UserDTO {
     private String lastName;
     private Boolean isAdmin;
     private Boolean active;
+    private Boolean mustChangePassword;
     private LocalDateTime createdAt;
     private LocalDateTime lastActiveAt;
 
@@ -33,6 +34,7 @@ public class UserDTO {
                 user.getLastName(),
                 user.getIsAdmin(),
                 user.getActive(),
+                user.getMustChangePassword(),
                 user.getCreatedAt(),
                 user.getLastActiveAt());
     }
