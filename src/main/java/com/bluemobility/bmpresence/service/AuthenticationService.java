@@ -55,6 +55,7 @@ public class AuthenticationService {
 
             currentUser.setSalt(newSalt);
             currentUser.setHashedPassword(newHashedPassword);
+            currentUser.setMustChangePassword(false);
 
             userRepository.save(currentUser);
 
@@ -64,6 +65,64 @@ public class AuthenticationService {
             log.error("Error durante el cambio de contraseña para usuario: {}",
                     currentUser != null ? currentUser.getUsername() : "unknown", e);
             return false;
+        }
+    }
+
+    @Transactional
+    public AuthenticationResponse adminResetPassword(Integer userId, String newPassword,
+            Boolean forceChangeOnNextLogin) {
+        try {
+            if (currentUser == null || !currentUser.getIsAdmin()) {
+                log.warn("Intento de reset de contraseña sin permisos de admin");
+                return new AuthenticationResponse(
+                        false,
+                        "Accesso negato. Solo gli amministratori possono resettare le password",
+                        null,
+                        null);
+            }
+
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                return new AuthenticationResponse(
+                        false,
+                        "La nuova password non può essere vuota",
+                        null,
+                        null);
+            }
+
+            User userToReset = userRepository.findById(userId).orElse(null);
+            if (userToReset == null) {
+                log.warn("Intento de reset para usuario ID {} no encontrado", userId);
+                return new AuthenticationResponse(
+                        false,
+                        "Utente non trovato",
+                        null,
+                        null);
+            }
+
+            String newSalt = generateSalt();
+            String newHashedPassword = hashPassword(newPassword, newSalt);
+
+            userToReset.setSalt(newSalt);
+            userToReset.setHashedPassword(newHashedPassword);
+            userToReset.setMustChangePassword(forceChangeOnNextLogin != null ? forceChangeOnNextLogin : true);
+
+            userRepository.save(userToReset);
+
+            log.info("Admin {} reseteó la contraseña para usuario: {}",
+                    currentUser.getUsername(), userToReset.getUsername());
+
+            return new AuthenticationResponse(
+                    true,
+                    "Password resettata con successo",
+                    null,
+                    null);
+        } catch (Exception e) {
+            log.error("Error durante reset de contraseña por admin", e);
+            return new AuthenticationResponse(
+                    false,
+                    "Errore durante il reset della password",
+                    null,
+                    null);
         }
     }
 
@@ -121,9 +180,14 @@ public class AuthenticationService {
 
             log.info("Usuario inició sesión exitosamente: {}", username);
 
+            String message = "Login effettuato con successo";
+            if (user.getMustChangePassword() != null && user.getMustChangePassword()) {
+                message = "Login effettuato. È necessario cambiare la password";
+            }
+
             return new AuthenticationResponse(
                     true,
-                    "Login effettuato con successo",
+                    message,
                     user,
                     token);
         } catch (Exception e) {

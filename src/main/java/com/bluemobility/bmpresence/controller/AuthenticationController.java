@@ -84,6 +84,24 @@ public class AuthenticationController {
         }
     }
 
+    @PostMapping("/admin-reset-password")
+    public ResponseEntity<?> adminResetPassword(@RequestBody AdminResetPasswordRequest request) {
+        AuthenticationService.AuthenticationResponse response = authenticationService.adminResetPassword(
+                request.getUserId(),
+                request.getNewPassword(),
+                request.getForceChangeOnNextLogin());
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(new MessageResponse(
+                    true,
+                    response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest().body(new ErrorResponse(
+                    false,
+                    response.getMessage()));
+        }
+    }
+
     @PostMapping("/restore-session")
     public ResponseEntity<?> restoreSession(@RequestBody RestoreSessionRequest request) {
         boolean success = authenticationService.restoreSession(request.getToken());
@@ -184,6 +202,13 @@ public class AuthenticationController {
     static class ChangePasswordRequest {
         private String currentPassword;
         private String newPassword;
+    }
+
+    @Data
+    static class AdminResetPasswordRequest {
+        private Integer userId;
+        private String newPassword;
+        private Boolean forceChangeOnNextLogin;
     }
 
     @Data
