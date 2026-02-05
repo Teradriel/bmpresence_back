@@ -60,6 +60,9 @@ public class User {
     @Column(name = "Active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "MustChangePassword")
+    private Boolean mustChangePassword = false;
+
     @Column(name = "CreatedAt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -1,5 +1,6 @@
 package com.bluemobility.bmpresence.service;
 
+import com.bluemobility.bmpresence.dto.UserDTO;
 import com.bluemobility.bmpresence.model.User;
 import com.bluemobility.bmpresence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,7 @@ public class AuthenticationService {
 
             currentUser.setSalt(newSalt);
             currentUser.setHashedPassword(newHashedPassword);
+            currentUser.setMustChangePassword(false);
 
             userRepository.save(currentUser);
 
@@ -64,6 +66,64 @@ public class AuthenticationService {
             log.error("Error durante el cambio de contraseña para usuario: {}",
                     currentUser != null ? currentUser.getUsername() : "unknown", e);
             return false;
+        }
+    }
+
+    @Transactional
+    public AuthenticationResponse adminResetPassword(Integer userId, String newPassword,
+            Boolean forceChangeOnNextLogin) {
+        try {
+            if (currentUser == null || !currentUser.getIsAdmin()) {
+                log.warn("Intento de reset de contraseña sin permisos de admin");
+                return new AuthenticationResponse(
+                        false,
+                        "Accesso negato. Solo gli amministratori possono resettare le password",
+                        null,
+                        null);
+            }
+
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                return new AuthenticationResponse(
+                        false,
+                        "La nuova password non può essere vuota",
+                        null,
+                        null);
+            }
+
+            User userToReset = userRepository.findById(userId).orElse(null);
+            if (userToReset == null) {
+                log.warn("Intento de reset para usuario ID {} no encontrado", userId);
+                return new AuthenticationResponse(
+                        false,
+                        "Utente non trovato",
+                        null,
+                        null);
+            }
+
+            String newSalt = generateSalt();
+            String newHashedPassword = hashPassword(newPassword, newSalt);
+
+            userToReset.setSalt(newSalt);
+            userToReset.setHashedPassword(newHashedPassword);
+            userToReset.setMustChangePassword(forceChangeOnNextLogin != null ? forceChangeOnNextLogin : true);
+
+            userRepository.save(userToReset);
+
+            log.info("Admin {} reseteó la contraseña para usuario: {}",
+                    currentUser.getUsername(), userToReset.getUsername());
+
+            return new AuthenticationResponse(
+                    true,
+                    "Password resettata con successo",
+                    null,
+                    null);
+        } catch (Exception e) {
+            log.error("Error durante reset de contraseña por admin", e);
+            return new AuthenticationResponse(
+                    false,
+                    "Errore durante il reset della password",
+                    null,
+                    null);
         }
     }
 
@@ -121,10 +181,15 @@ public class AuthenticationService {
 
             log.info("Usuario inició sesión exitosamente: {}", username);
 
+            String message = "Login effettuato con successo";
+            if (user.getMustChangePassword() != null && user.getMustChangePassword()) {
+                message = "Login effettuato. È necessario cambiare la password";
+            }
+
             return new AuthenticationResponse(
                     true,
-                    "Login effettuato con successo",
-                    user,
+                    message,
+                    UserDTO.fromUser(user),
                     token);
         } catch (Exception e) {
             log.error("Error durante el inicio de sesión para usuario: {}", username, e);
@@ -247,7 +312,7 @@ public class AuthenticationService {
             return new AuthenticationResponse(
                     true,
                     "Utente registrato con successo",
-                    savedUser,
+                    UserDTO.fromUser(savedUser),
                     null);
         } catch (Exception e) {
             log.error("Error durante el registro de usuario: {}", username, e);
@@ -313,10 +378,10 @@ public class AuthenticationService {
     public static class AuthenticationResponse {
         private final boolean success;
         private final String message;
-        private final User user;
+        private final UserDTO user;
         private final String token;
 
-        public AuthenticationResponse(boolean success, String message, User user, String token) {
+        public AuthenticationResponse(boolean success, String message, UserDTO user, String token) {
             this.success = success;
             this.message = message;
             this.user = user;
@@ -331,7 +396,7 @@ public class AuthenticationService {
             return message;
         }
 
-        public User getUser() {
+        public UserDTO getUser() {
             return user;
         }
 

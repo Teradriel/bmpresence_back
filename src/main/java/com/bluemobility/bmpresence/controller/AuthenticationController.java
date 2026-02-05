@@ -30,7 +30,7 @@ public class AuthenticationController {
             return ResponseEntity.ok(new LoginResponse(
                     true,
                     response.getMessage(),
-                    UserDTO.fromUser(response.getUser()),
+                    response.getUser(),
                     response.getToken()));
         } else {
             return ResponseEntity.badRequest().body(new ErrorResponse(
@@ -82,6 +82,24 @@ public class AuthenticationController {
             return ResponseEntity.badRequest().body(new ErrorResponse(
                     false,
                     "Errore durante il cambio della password"));
+        }
+    }
+
+    @PostMapping("/admin-reset-password")
+    public ResponseEntity<?> adminResetPassword(@RequestBody AdminResetPasswordRequest request) {
+        AuthenticationService.AuthenticationResponse response = authenticationService.adminResetPassword(
+                request.getUserId(),
+                request.getNewPassword(),
+                request.getForceChangeOnNextLogin());
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(new MessageResponse(
+                    true,
+                    response.getMessage()));
+        } else {
+            return ResponseEntity.badRequest().body(new ErrorResponse(
+                    false,
+                    response.getMessage()));
         }
     }
 
@@ -185,6 +203,13 @@ public class AuthenticationController {
     static class ChangePasswordRequest {
         private String currentPassword;
         private String newPassword;
+    }
+
+    @Data
+    static class AdminResetPasswordRequest {
+        private Integer userId;
+        private String newPassword;
+        private Boolean forceChangeOnNextLogin;
     }
 
     @Data
