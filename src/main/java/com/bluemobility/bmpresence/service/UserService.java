@@ -24,12 +24,12 @@ public class UserService {
 
     public User findById(Integer id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con id: " + id));
     }
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con email: " + email));
     }
 
     public List<User> findOnlineUsers() {

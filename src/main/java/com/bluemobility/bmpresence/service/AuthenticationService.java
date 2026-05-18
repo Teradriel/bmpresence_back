@@ -46,7 +46,7 @@ public class AuthenticationService {
                     currentUser.getSalt());
 
             if (!isCurrentPasswordValid) {
-                log.warn("Cambio de contraseña fallido: Contraseña actual inválida para usuario {}",
+                log.warn("Password change failed: Invalid current password for user {}",
                         currentUser.getUsername());
                 return false;
             }
@@ -60,10 +60,10 @@ public class AuthenticationService {
 
             userRepository.save(currentUser);
 
-            log.info("Contraseña cambiada exitosamente para usuario: {}", currentUser.getUsername());
+            log.info("Password changed successfully for user: {}", currentUser.getUsername());
             return true;
         } catch (Exception e) {
-            log.error("Error durante el cambio de contraseña para usuario: {}",
+            log.error("Error during password change for user: {}",
                     currentUser != null ? currentUser.getUsername() : "unknown", e);
             return false;
         }
@@ -74,7 +74,7 @@ public class AuthenticationService {
             Boolean forceChangeOnNextLogin) {
         try {
             if (currentUser == null || !currentUser.getIsAdmin()) {
-                log.warn("Intento de reset de contraseña sin permisos de admin");
+                log.warn("Password reset attempt without admin permissions");
                 return new AuthenticationResponse(
                         false,
                         "Accesso negato. Solo gli amministratori possono resettare le password",
@@ -92,7 +92,7 @@ public class AuthenticationService {
 
             User userToReset = userRepository.findById(userId).orElse(null);
             if (userToReset == null) {
-                log.warn("Intento de reset para usuario ID {} no encontrado", userId);
+                log.warn("Reset attempt for user ID {} not found", userId);
                 return new AuthenticationResponse(
                         false,
                         "Utente non trovato",
@@ -109,7 +109,7 @@ public class AuthenticationService {
 
             userRepository.save(userToReset);
 
-            log.info("Admin {} reseteó la contraseña para usuario: {}",
+            log.info("Admin {} reset password for user: {}",
                     currentUser.getUsername(), userToReset.getUsername());
 
             return new AuthenticationResponse(
@@ -118,7 +118,7 @@ public class AuthenticationService {
                     null,
                     null);
         } catch (Exception e) {
-            log.error("Error durante reset de contraseña por admin", e);
+            log.error("Error during admin password reset", e);
             return new AuthenticationResponse(
                     false,
                     "Errore durante il reset della password",
@@ -134,7 +134,7 @@ public class AuthenticationService {
                     password == null || password.isEmpty()) {
                 return new AuthenticationResponse(
                         false,
-                        "El nombre de usuario y la contraseña son obligatorios",
+                        "Il nome utente e la password sono obbligatori",
                         null,
                         null);
             }
@@ -142,7 +142,7 @@ public class AuthenticationService {
             User user = userRepository.findByUsername(username).orElse(null);
 
             if (user == null) {
-                log.warn("Intento de inicio de sesión fallido: Usuario no encontrado - {}", username);
+                log.warn("Failed login attempt: User not found - {}", username);
                 return new AuthenticationResponse(
                         false,
                         "Nome utente o password non corretti",
@@ -151,7 +151,7 @@ public class AuthenticationService {
             }
 
             if (!user.getActive()) {
-                log.warn("Intento de inicio de sesión fallido: Usuario inactivo - {}", username);
+                log.warn("Failed login attempt: Inactive user - {}", username);
                 return new AuthenticationResponse(
                         false,
                         "L'account utente è disattivato",
@@ -165,7 +165,7 @@ public class AuthenticationService {
                     user.getSalt());
 
             if (!isPasswordValid) {
-                log.warn("Intento de inicio de sesión fallido: Contraseña inválida - {}", username);
+                log.warn("Failed login attempt: Invalid password - {}", username);
                 return new AuthenticationResponse(
                         false,
                         "Nome utente o password non corretti",
@@ -179,7 +179,7 @@ public class AuthenticationService {
 
             String token = tokenService.generateToken(user.getId());
 
-            log.info("Usuario inició sesión exitosamente: {}", username);
+            log.info("User logged in successfully: {}", username);
 
             String message = "Login effettuato con successo";
             if (user.getMustChangePassword() != null && user.getMustChangePassword()) {
@@ -192,7 +192,7 @@ public class AuthenticationService {
                     UserDTO.fromUser(user),
                     token);
         } catch (Exception e) {
-            log.error("Error durante el inicio de sesión para usuario: {}", username, e);
+            log.error("Error during login for user: {}", username, e);
             return new AuthenticationResponse(
                     false,
                     "Errore durante l'accesso. Si prega di riprovare.",
@@ -203,7 +203,7 @@ public class AuthenticationService {
 
     public void logout() {
         if (currentUser != null) {
-            log.info("Usuario cerró sesión: {}", currentUser.getUsername());
+            log.info("User logged out: {}", currentUser.getUsername());
             currentUser = null;
         }
     }
@@ -213,34 +213,34 @@ public class AuthenticationService {
         try {
             boolean isTokenValid = tokenService.isTokenValid(token);
             if (!isTokenValid) {
-                log.info("No se encontró un token válido o el token ha expirado");
+                log.info("No valid token found or token has expired");
                 return false;
             }
 
             Integer userId = tokenService.getUserIdFromToken(token);
             if (userId == null) {
-                log.warn("Token encontrado pero no se encontró ID de usuario");
+                log.warn("Token found but no user ID found");
                 return false;
             }
 
             User user = userRepository.findById(userId).orElse(null);
             if (user == null) {
-                log.warn("Usuario ID {} no encontrado en la base de datos", userId);
+                log.warn("User ID {} not found in database", userId);
                 return false;
             }
 
             if (!user.getActive()) {
-                log.warn("Usuario {} está inactivo", user.getUsername());
+                log.warn("User {} is inactive", user.getUsername());
                 return false;
             }
 
             currentUser = user;
             updateLastActive(user);
 
-            log.info("Sesión restaurada exitosamente para usuario: {}", user.getUsername());
+            log.info("Session restored successfully for user: {}", user.getUsername());
             return true;
         } catch (Exception e) {
-            log.error("Error restaurando sesión", e);
+            log.error("Error restoring session", e);
             return false;
         }
     }
@@ -271,7 +271,7 @@ public class AuthenticationService {
                         null);
             }
 
-            // Verificar si el usuario ya existe
+            // Check if user already exists
             if (userRepository.findByUsername(username).isPresent()) {
                 return new AuthenticationResponse(
                         false,
@@ -288,7 +288,7 @@ public class AuthenticationService {
                         null);
             }
 
-            // Generar salt y hashear la contraseña
+            // Generate salt and hash the password
             String salt = generateSalt();
             String hashedPassword = hashPassword(password, salt);
 
@@ -307,7 +307,7 @@ public class AuthenticationService {
 
             User savedUser = userRepository.save(newUser);
 
-            log.info("Nuevo usuario registrado: {}", username);
+            log.info("New user registered: {}", username);
 
             return new AuthenticationResponse(
                     true,
@@ -315,7 +315,7 @@ public class AuthenticationService {
                     UserDTO.fromUser(savedUser),
                     null);
         } catch (Exception e) {
-            log.error("Error durante el registro de usuario: {}", username, e);
+            log.error("Error during user registration: {}", username, e);
             return new AuthenticationResponse(
                     false,
                     "Errore durante la registrazione dell'utente. Si prega di riprovare.",
@@ -349,8 +349,8 @@ public class AuthenticationService {
 
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            log.error("Error hasheando contraseña", e);
-            throw new RuntimeException("Error hasheando contraseña", e);
+            log.error("Error hashing password", e);
+            throw new RuntimeException("Error hashing password", e);
         }
     }
 
@@ -361,7 +361,7 @@ public class AuthenticationService {
             user.setIsOnline(true);
             userRepository.save(user);
         } catch (Exception e) {
-            log.error("Error actualizando last active para usuario: {}", user.getUsername(), e);
+            log.error("Error updating last active for user: {}", user.getUsername(), e);
         }
     }
 
@@ -374,7 +374,7 @@ public class AuthenticationService {
         return computedHash.equals(storedHash);
     }
 
-    // Clase interna para la respuesta de autenticación
+    // Inner class for authentication response
     public static class AuthenticationResponse {
         private final boolean success;
         private final String message;

@@ -34,11 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @Nonnull HttpServletResponse response,
             @Nonnull FilterChain filterChain) throws ServletException, IOException {
 
-        // Obtener el header Authorization
+        // Get the Authorization header
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.debug("No se encontró token JWT en la petición a: {}", request.getRequestURI());
+            log.debug("No JWT token found in request to: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -49,40 +49,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Validar el token
             if (!tokenService.isTokenValid(token)) {
-                log.warn("Token JWT inválido o expirado");
+                log.warn("Invalid or expired JWT token");
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // Obtener el userId del token
+            // Get the userId from the token
             Integer userId = tokenService.getUserIdFromToken(token);
             if (userId == null) {
-                log.warn("No se pudo extraer el userId del token");
+                log.warn("Could not extract userId from token");
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // Verificar si ya está autenticado
+            // Check if already authenticated
             if (SecurityContextHolder.getContext().getAuthentication() != null) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // Obtener el usuario de la base de datos
+            // Get the user from the database
             User user = userService.findById(userId);
 
             if (user == null || !user.getActive()) {
-                log.warn("Usuario no encontrado o inactivo: {}", userId);
+                log.warn("User not found or inactive: {}", userId);
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // Crear las authorities basadas en el rol
+            // Create authorities based on role
             SimpleGrantedAuthority authority = user.getIsAdmin()
                     ? new SimpleGrantedAuthority("ROLE_ADMIN")
                     : new SimpleGrantedAuthority("ROLE_USER");
 
-            // Crear el objeto de autenticación
+            // Create the authentication object
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     user,
                     null,
@@ -90,13 +90,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            // Establecer la autenticación en el contexto de seguridad
+            // Set authentication in the security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            log.debug("Usuario autenticado exitosamente: {} (ID: {})", user.getUsername(), userId);
+            log.debug("User authenticated successfully: {} (ID: {})", user.getUsername(), userId);
 
         } catch (Exception e) {
-            log.error("Error procesando el token JWT: {}", e.getMessage());
+            log.error("Error processing JWT token: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

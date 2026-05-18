@@ -23,7 +23,7 @@ public class PresenceResourceService {
 
     public PresenceResource findById(Integer id) {
         return resourceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Recurso no encontrado con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Risorsa non trovata con id: " + id));
     }
 
     @Transactional
