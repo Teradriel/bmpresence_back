@@ -122,14 +122,14 @@ public class AuthenticationController {
 
     @PostMapping("/renew-token")
     public ResponseEntity<?> renewToken(@RequestBody RenewTokenRequest request, HttpServletRequest httpRequest) {
-        // Log de la petición para rastrear llamadas múltiples
+        // Log the request to track multiple calls
         String userAgent = httpRequest.getHeader("User-Agent");
         String referer = httpRequest.getHeader("Referer");
-        log.warn("⚠️ Llamada a /renew-token - User-Agent: {}, Referer: {}", userAgent, referer);
+        log.warn("⚠️ Call to /renew-token - User-Agent: {}, Referer: {}", userAgent, referer);
 
-        // Validar que se envió un token
+        // Validate that a token was provided
         if (request.getToken() == null || request.getToken().isEmpty()) {
-            log.warn("Intento de renovar sin proporcionar token");
+            log.warn("Attempt to renew without providing token");
             return ResponseEntity.badRequest().body(new ErrorResponse(
                     false,
                     "Token non fornito"));
@@ -143,7 +143,7 @@ public class AuthenticationController {
                     "Token rinnovato con successo",
                     newToken));
         } else {
-            // Retornar 401 para que el frontend sepa que debe hacer login nuevamente
+            // Return 401 so the frontend knows it needs to login again
             return ResponseEntity.status(401).body(new ErrorResponse(
                     false,
                     "Impossibile rinnovare il token - token invalido o corrotto"));
@@ -164,7 +164,7 @@ public class AuthenticationController {
         if (isValid) {
             return ResponseEntity.ok(new ValidationResponse(true));
         } else {
-            // Retornar 401 si el token no es válido
+            // Return 401 if the token is not valid
             return ResponseEntity.status(401).body(new ValidationResponse(false));
         }
     }

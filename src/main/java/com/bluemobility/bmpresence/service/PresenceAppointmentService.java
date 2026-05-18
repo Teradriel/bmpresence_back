@@ -26,7 +26,7 @@ public class PresenceAppointmentService {
 
     public PresenceAppointment findById(Integer id) {
         return appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cita no encontrada con id: " + id));
+                .orElseThrow(() -> new RuntimeException("Appuntamento non trovato con id: " + id));
     }
 
     public List<PresenceAppointment> findByDateRange(LocalDateTime start, LocalDateTime end) {
@@ -81,7 +81,7 @@ public class PresenceAppointmentService {
                     startOfDay,
                     endOfDay);
 
-            // Filtrar el appointment actual si estamos actualizando
+            // Filter the current appointment if we are updating
             if (currentAppointmentId != null) {
                 conflicts = conflicts.stream()
                         .filter(a -> !a.getId().equals(currentAppointmentId))
@@ -90,7 +90,7 @@ public class PresenceAppointmentService {
 
             if (!conflicts.isEmpty()) {
                 throw new AppointmentConflictException(
-                        String.format("La persona '%s' ya tiene un appointment asignado para el recurso %d el día %s",
+                        String.format("La persona '%s' ha già un appuntamento assegnato per la risorsa %d il giorno %s",
                                 appointment.getSubject(), resourceId, appointmentDate));
             }
         }

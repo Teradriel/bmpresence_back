@@ -24,13 +24,13 @@ public class TokenService {
     private SecretKey getSigningKey() {
         byte[] keyBytes;
         try {
-            // Intentar decodificar como Base64 primero (si la clave está en Base64)
+            // Try to decode as Base64 first (if the key is in Base64)
             keyBytes = Base64.getDecoder().decode(jwtConfig.getSecret());
-            log.debug("JWT secret decodificada desde Base64 ({} bytes)", keyBytes.length);
+            log.debug("JWT secret decoded from Base64 ({} bytes)", keyBytes.length);
         } catch (IllegalArgumentException e) {
-            // Si no es Base64, usar como texto plano
+            // If not Base64, use as plain text
             keyBytes = jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8);
-            log.debug("JWT secret usada como texto plano ({} bytes)", keyBytes.length);
+            log.debug("JWT secret used as plain text ({} bytes)", keyBytes.length);
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -46,14 +46,14 @@ public class TokenService {
                 .signWith(getSigningKey())
                 .compact();
 
-        log.info("Token generado exitosamente para usuario ID: {}", userId);
+        log.info("Token generated successfully for user ID: {}", userId);
         return token;
     }
 
     public boolean isTokenValid(String token) {
         try {
             if (token == null || token.isEmpty()) {
-                log.info("Token no encontrado o vacío");
+                log.info("Token not found or empty");
                 return false;
             }
 
@@ -67,15 +67,15 @@ public class TokenService {
             boolean isValid = expiration.after(new Date());
 
             if (!isValid) {
-                log.info("Token expirado. Fecha de expiración: {}", expiration);
+                log.info("Token expired. Expiration date: {}", expiration);
             }
 
             return isValid;
         } catch (ExpiredJwtException e) {
-            log.info("Token expirado: {}", e.getMessage());
+            log.info("Token expired: {}", e.getMessage());
             return false;
         } catch (JwtException e) {
-            log.error("Error validando token: {}", e.getMessage());
+            log.error("Error validating token: {}", e.getMessage());
             return false;
         }
     }
@@ -90,21 +90,21 @@ public class TokenService {
 
             return Integer.parseInt(claims.getSubject());
         } catch (JwtException e) {
-            log.error("Error obteniendo user ID del token: {}", e.getMessage());
+            log.error("Error getting user ID from token: {}", e.getMessage());
             return null;
         }
     }
 
     public String renewToken(String oldToken) {
         try {
-            // Validar que el token no esté vacío
+            // Validate that the token is not empty
             if (oldToken == null || oldToken.isEmpty()) {
-                log.warn("Intento de renovar token vacío o nulo");
+                log.warn("Attempt to renew empty or null token");
                 return null;
             }
 
-            // Primero verificar si el token todavía es válido
-            // No tiene sentido renovar un token que aún no ha expirado
+            // First check if the token is still valid
+            // No point in renewing a token that has not yet expired
             Integer userId;
             Date expirationDate;
             boolean isExpired = false;
@@ -118,36 +118,36 @@ public class TokenService {
                 userId = Integer.parseInt(claims.getSubject());
                 expirationDate = claims.getExpiration();
 
-                // Calcular tiempo restante hasta la expiración
+                // Calculate remaining time until expiration
                 long timeUntilExpiration = expirationDate.getTime() - System.currentTimeMillis();
                 long hoursUntilExpiration = timeUntilExpiration / (1000 * 60 * 60);
 
-                // Solo renovar si el token expira en menos de 24 horas
+                // Only renew if the token expires in less than 24 hours
                 if (timeUntilExpiration > 0 && hoursUntilExpiration >= 24) {
-                    log.warn("Intento de renovar token válido que expira en {} horas. Usuario ID: {}. " +
-                            "No es necesario renovar aún.", hoursUntilExpiration, userId);
+                    log.warn("Attempt to renew valid token expiring in {} hours. User ID: {}. Not necessary to renew yet.",
+                            hoursUntilExpiration, userId);
                     return null;
                 }
 
-                log.info("Renovando token que expira en {} horas para usuario ID: {}",
+                log.info("Renewing token expiring in {} hours for user ID: {}",
                         hoursUntilExpiration, userId);
 
             } catch (ExpiredJwtException e) {
-                // Si el token está expirado, aún podemos obtener el userId de las claims
+                // If the token is expired, we can still get the userId from the claims
                 userId = Integer.parseInt(e.getClaims().getSubject());
                 isExpired = true;
-                log.info("Renovando token expirado para usuario ID: {}", userId);
+                log.info("Renewing expired token for user ID: {}", userId);
             }
 
             String newToken = generateToken(userId);
-            log.info("Token renovado exitosamente para usuario ID: {} (token anterior estaba {})",
-                    userId, isExpired ? "expirado" : "próximo a expirar");
+            log.info("Token renewed successfully for user ID: {} (previous token was {})",
+                    userId, isExpired ? "expired" : "expiring soon");
             return newToken;
         } catch (JwtException e) {
-            log.error("Error renovando token - Token inválido o corrupto: {}", e.getMessage());
+            log.error("Error renewing token - Invalid or corrupted token: {}", e.getMessage());
             return null;
         } catch (Exception e) {
-            log.error("Error inesperado renovando token", e);
+            log.error("Unexpected error renewing token", e);
             return null;
         }
     }
@@ -162,7 +162,7 @@ public class TokenService {
 
             return claims.getExpiration();
         } catch (JwtException e) {
-            log.error("Error obteniendo fecha de expiración del token: {}", e.getMessage());
+            log.error("Error getting token expiration date: {}", e.getMessage());
             return null;
         }
     }

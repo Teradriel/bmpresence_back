@@ -1,0 +1,17 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key for signing JWT tokens. Must be at least 256 bits for HMAC-SHA256.",
+      "sourceType": "com.bluemobility.bmpresence.config.JwtConfigProperties"
+    },
+    {
+      "name": "jwt.expiration.days",
+      "type": "java.lang.Integer",
+      "description": "Days until the JWT token expires.",
+      "sourceType": "com.bluemobility.bmpresence.config.JwtConfigProperties$Expiration",
+      "defaultValue": 30
+    }
+  ]
+}
