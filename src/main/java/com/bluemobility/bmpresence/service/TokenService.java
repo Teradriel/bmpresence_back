@@ -133,7 +133,14 @@ public class TokenService {
                         hoursUntilExpiration, userId);
 
             } catch (ExpiredJwtException e) {
-                // If the token is expired, we can still get the userId from the claims
+                // Scaduto: si rinnova solo entro la finestra di tolleranza, oltre serve il login
+                Date expiredAt = e.getClaims().getExpiration();
+                long graceMs = jwtConfig.getRenewGraceDays() * 24L * 60 * 60 * 1000;
+                if (System.currentTimeMillis() - expiredAt.getTime() > graceMs) {
+                    log.info("Token expired on {}, beyond the {}-day renewal window", expiredAt,
+                            jwtConfig.getRenewGraceDays());
+                    return null;
+                }
                 userId = Integer.parseInt(e.getClaims().getSubject());
                 isExpired = true;
                 log.info("Renewing expired token for user ID: {}", userId);

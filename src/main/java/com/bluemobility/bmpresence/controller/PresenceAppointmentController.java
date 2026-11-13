@@ -1,6 +1,7 @@
 package com.bluemobility.bmpresence.controller;
 
 import com.bluemobility.bmpresence.exception.AppointmentConflictException;
+import com.bluemobility.bmpresence.exception.InvalidAppointmentException;
 import com.bluemobility.bmpresence.model.PresenceAppointment;
 import com.bluemobility.bmpresence.service.PresenceAppointmentService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.bluemobility.bmpresence.dto.AppointmentOccurrence;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -46,6 +49,28 @@ public class PresenceAppointmentController {
         return ResponseEntity.ok(appointmentService.findByResourceId(resourceId));
     }
 
+    /** Presenze giorno per giorno (serie espanse) in [start, end], formato aaaa-mm-gg. */
+    @GetMapping("/occurrences")
+    public ResponseEntity<List<AppointmentOccurrence>> getOccurrences(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        return ResponseEntity.ok(appointmentService.occurrences(start, end));
+    }
+
+    @PostMapping("/{id}/remove-day")
+    public ResponseEntity<Void> removeDay(@PathVariable Integer id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        appointmentService.removeOccurrence(id, date);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/end-series")
+    public ResponseEntity<Void> endSeries(@PathVariable Integer id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
+        appointmentService.endSeries(id, from);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping
     public ResponseEntity<PresenceAppointment> createAppointment(@RequestBody PresenceAppointment appointment) {
         PresenceAppointment createdAppointment = appointmentService.create(appointment);
@@ -68,6 +93,11 @@ public class PresenceAppointmentController {
     @ExceptionHandler(AppointmentConflictException.class)
     public ResponseEntity<String> handleConflictException(AppointmentConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidAppointmentException.class)
+    public ResponseEntity<String> handleInvalid(InvalidAppointmentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

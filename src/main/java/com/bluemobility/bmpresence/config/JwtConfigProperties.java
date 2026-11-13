@@ -23,8 +23,13 @@ public class JwtConfigProperties {
     @Data
     public static class Expiration {
         /**
-         * Días hasta que expire el token (por defecto 30)
+         * Giorni di validità del token (default 7)
          */
-        private int days = 30;
+        private int days = 7;
     }
+
+    /**
+     * Giorni dopo la scadenza in cui un token scaduto si può ancora rinnovare (default 7).
+     */
+    private int renewGraceDays = 7;
 }

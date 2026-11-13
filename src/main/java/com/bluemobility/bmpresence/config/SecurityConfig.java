@@ -3,6 +3,7 @@ package com.bluemobility.bmpresence.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -32,7 +33,22 @@ public class SecurityConfig {
                                                                 "/swagger-ui.html")
                                                 .permitAll()
                                                 .requestMatchers("/actuator/health/**").permitAll()
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/login",
+                                                                "/api/auth/register", "/api/auth/restore-session",
+                                                                "/api/auth/renew-token")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/validate-token")
+                                                .permitAll()
+                                                .requestMatchers("/api/auth/admin-reset-password", "/api/auth/admin-create-user")
+                                                .hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/email/**")
+                                                .hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.POST, "/api/resources/**").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/resources/**")
+                                                .hasRole("ADMIN")
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

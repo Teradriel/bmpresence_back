@@ -24,6 +24,9 @@ public class PresenceAppointment {
     @Column(name = "Subject")
     private String subject;
 
+    @Column(name = "UserId")
+    private Integer userId;
+
     @Column(name = "StartTime", nullable = false)
     private LocalDateTime startTime;
 
@@ -32,6 +35,11 @@ public class PresenceAppointment {
 
     @Column(name = "RecurrenceRule", columnDefinition = "TEXT")
     private String recurrenceRule;
+
+    /** Date (aaaa-mm-gg) tolte dalla serie: "togli solo questo giorno". */
+    @Column(name = "RecurrenceExceptions", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<String> recurrenceExceptions;
 
     @Column(name = "Active", nullable = false)
     private Boolean active = true;

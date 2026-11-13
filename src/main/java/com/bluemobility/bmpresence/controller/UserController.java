@@ -6,6 +6,7 @@ import com.bluemobility.bmpresence.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +33,17 @@ public class UserController {
                 .collect(Collectors.toList()));
     }
 
+    /** Colleghi attivi per i selettori: solo i campi che servono, visibili a ogni utente collegato. */
+    @GetMapping("/colleagues")
+    public ResponseEntity<List<Colleague>> getColleagues() {
+        return ResponseEntity.ok(userService.findAllActive().stream()
+                .map(u -> new Colleague(u.getId(), u.getName(), u.getLastName(), u.getIsOnline()))
+                .collect(Collectors.toList()));
+    }
+
+    public record Colleague(Integer id, String name, String lastName, Boolean isOnline) {
+    }
+
     @GetMapping("/online")
     public ResponseEntity<List<UserDTO>> getOnlineUsers() {
         return ResponseEntity.ok(userService.findOnlineUsers().stream()
@@ -40,7 +52,10 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Integer id) {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Integer id, @AuthenticationPrincipal User me) {
+        if (!selfOrAdmin(me, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(UserDTO.fromUser(userService.findById(id)));
     }
 
@@ -56,13 +71,22 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable Integer id, @RequestBody User user) {
-        User updatedUser = userService.update(id, user);
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Integer id, @RequestBody User user,
+            @AuthenticationPrincipal User me) {
+        if (!selfOrAdmin(me, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        // ruolo e stato attivo li cambia solo un amministratore
+        User updatedUser = userService.update(id, user, Boolean.TRUE.equals(me.getIsAdmin()));
         return ResponseEntity.ok(UserDTO.fromUser(updatedUser));
     }
 
     @PutMapping("/{id}/online-status")
-    public ResponseEntity<UserDTO> updateOnlineStatus(@PathVariable Integer id, @RequestParam Boolean isOnline) {
+    public ResponseEntity<UserDTO> updateOnlineStatus(@PathVariable Integer id, @RequestParam Boolean isOnline,
+            @AuthenticationPrincipal User me) {
+        if (!selfOrAdmin(me, id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         User updatedUser = userService.updateOnlineStatus(id, isOnline);
         return ResponseEntity.ok(UserDTO.fromUser(updatedUser));
     }
@@ -77,6 +101,10 @@ public class UserController {
     public ResponseEntity<Void> hardDeleteUser(@PathVariable Integer id) {
         userService.hardDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private static boolean selfOrAdmin(User me, Integer id) {
+        return me != null && (Boolean.TRUE.equals(me.getIsAdmin()) || me.getId().equals(id));
     }
 
     @ExceptionHandler(RuntimeException.class)
