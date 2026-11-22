@@ -85,6 +85,23 @@ public class AuthenticationController {
         }
     }
 
+    @PostMapping("/admin-create-user")
+    public ResponseEntity<?> adminCreateUser(@RequestBody AdminCreateUserRequest request) {
+        AuthenticationService.AuthenticationResponse response = authenticationService.adminCreateUser(
+                request.getName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.getUsername(),
+                request.getPassword(),
+                request.getIsAdmin(),
+                request.getActive());
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(new LoginResponse(true, response.getMessage(), response.getUser(), null));
+        }
+        return ResponseEntity.badRequest().body(new ErrorResponse(false, response.getMessage()));
+    }
+
     @PostMapping("/admin-reset-password")
     public ResponseEntity<?> adminResetPassword(@RequestBody AdminResetPasswordRequest request) {
         AuthenticationService.AuthenticationResponse response = authenticationService.adminResetPassword(
@@ -105,10 +122,9 @@ public class AuthenticationController {
 
     @PostMapping("/restore-session")
     public ResponseEntity<?> restoreSession(@RequestBody RestoreSessionRequest request) {
-        boolean success = authenticationService.restoreSession(request.getToken());
+        User currentUser = authenticationService.restoreSession(request.getToken());
 
-        if (success) {
-            User currentUser = authenticationService.getCurrentUser();
+        if (currentUser != null) {
             return ResponseEntity.ok(new SessionResponse(
                     true,
                     "Sessione restaurata con successo",
@@ -197,6 +213,17 @@ public class AuthenticationController {
         private String username;
         private String password;
         private Boolean isAdmin;
+    }
+
+    @Data
+    static class AdminCreateUserRequest {
+        private String name;
+        private String lastName;
+        private String email;
+        private String username;
+        private String password;
+        private Boolean isAdmin;
+        private Boolean active;
     }
 
     @Data

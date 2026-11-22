@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.bluemobility</groupId>
 	<artifactId>bmpresence</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.5.0</version>
 	<name>bmpresence</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>

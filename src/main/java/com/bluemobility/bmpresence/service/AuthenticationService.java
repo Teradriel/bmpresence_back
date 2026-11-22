@@ -5,6 +5,8 @@ import com.bluemobility.bmpresence.model.User;
 import com.bluemobility.bmpresence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,19 +25,24 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final TokenService tokenService;
 
-    private User currentUser;
-
+    /** L'utente della richiesta corrente, letto dal JWT (mai da uno stato condiviso tra richieste). */
     public User getCurrentUser() {
-        return currentUser;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof User user ? user : null;
     }
 
     public boolean isAuthenticated() {
-        return currentUser != null;
+        return getCurrentUser() != null;
     }
 
     @Transactional
     public boolean changePassword(String currentPassword, String newPassword) {
         try {
+            User principal = getCurrentUser();
+            if (principal == null) {
+                return false;
+            }
+            User currentUser = userRepository.findById(principal.getId()).orElse(null);
             if (currentUser == null) {
                 return false;
             }
@@ -64,7 +71,7 @@ public class AuthenticationService {
             return true;
         } catch (Exception e) {
             log.error("Error during password change for user: {}",
-                    currentUser != null ? currentUser.getUsername() : "unknown", e);
+                    getCurrentUser() != null ? getCurrentUser().getUsername() : "unknown", e);
             return false;
         }
     }
@@ -73,7 +80,8 @@ public class AuthenticationService {
     public AuthenticationResponse adminResetPassword(Integer userId, String newPassword,
             Boolean forceChangeOnNextLogin) {
         try {
-            if (currentUser == null || !currentUser.getIsAdmin()) {
+            User currentUser = getCurrentUser();
+            if (currentUser == null || !Boolean.TRUE.equals(currentUser.getIsAdmin())) {
                 log.warn("Password reset attempt without admin permissions");
                 return new AuthenticationResponse(
                         false,
@@ -175,8 +183,6 @@ public class AuthenticationService {
 
             updateLastActive(user);
 
-            currentUser = user;
-
             String token = tokenService.generateToken(user.getId());
 
             log.info("User logged in successfully: {}", username);
@@ -202,50 +208,50 @@ public class AuthenticationService {
     }
 
     public void logout() {
+        User currentUser = getCurrentUser();
         if (currentUser != null) {
             log.info("User logged out: {}", currentUser.getUsername());
-            currentUser = null;
         }
     }
 
     @Transactional
-    public boolean restoreSession(String token) {
+    public User restoreSession(String token) {
         try {
             boolean isTokenValid = tokenService.isTokenValid(token);
             if (!isTokenValid) {
                 log.info("No valid token found or token has expired");
-                return false;
+                return null;
             }
 
             Integer userId = tokenService.getUserIdFromToken(token);
             if (userId == null) {
                 log.warn("Token found but no user ID found");
-                return false;
+                return null;
             }
 
             User user = userRepository.findById(userId).orElse(null);
             if (user == null) {
                 log.warn("User ID {} not found in database", userId);
-                return false;
+                return null;
             }
 
             if (!user.getActive()) {
                 log.warn("User {} is inactive", user.getUsername());
-                return false;
+                return null;
             }
 
-            currentUser = user;
             updateLastActive(user);
 
             log.info("Session restored successfully for user: {}", user.getUsername());
-            return true;
+            return user;
         } catch (Exception e) {
             log.error("Error restoring session", e);
-            return false;
+            return null;
         }
     }
 
     @Transactional
+    /** Registrazione pubblica: l'account nasce inattivo e senza ruolo, lo attiva un amministratore. */
     public AuthenticationResponse registerUser(
             String name,
             String lastName,
@@ -253,6 +259,33 @@ public class AuthenticationService {
             String username,
             String password,
             Boolean isAdmin) {
+        return createUser(name, lastName, email, username, password, false, false, false);
+    }
+
+    /** Creazione da amministratore: attivo subito, con ruolo scelto e password temporanea da cambiare. */
+    @Transactional
+    public AuthenticationResponse adminCreateUser(
+            String name,
+            String lastName,
+            String email,
+            String username,
+            String password,
+            Boolean isAdmin,
+            Boolean active) {
+        return createUser(name, lastName, email, username, password,
+                Boolean.TRUE.equals(isAdmin), active == null || active, true);
+    }
+
+    @Transactional
+    private AuthenticationResponse createUser(
+            String name,
+            String lastName,
+            String email,
+            String username,
+            String password,
+            boolean isAdmin,
+            boolean active,
+            boolean mustChangePassword) {
         try {
             if (username == null || username.trim().isEmpty() ||
                     password == null || password.isEmpty()) {
@@ -299,8 +332,9 @@ public class AuthenticationService {
             newUser.setUsername(username);
             newUser.setSalt(salt);
             newUser.setHashedPassword(hashedPassword);
-            newUser.setActive(true);
-            newUser.setIsAdmin(isAdmin != null ? isAdmin : false);
+            newUser.setActive(active);
+            newUser.setIsAdmin(isAdmin);
+            newUser.setMustChangePassword(mustChangePassword);
             newUser.setIsOnline(false);
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setLastUpdated(LocalDateTime.now());
@@ -311,7 +345,8 @@ public class AuthenticationService {
 
             return new AuthenticationResponse(
                     true,
-                    "Utente registrato con successo",
+                    active ? "Utente creato con successo"
+                            : "Utente registrato. Un amministratore deve attivare l'account",
                     UserDTO.fromUser(savedUser),
                     null);
         } catch (Exception e) {

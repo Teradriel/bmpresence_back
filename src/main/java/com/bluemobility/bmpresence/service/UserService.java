@@ -42,7 +42,7 @@ public class UserService {
     }
 
     @Transactional
-    public User update(Integer id, User userDetails) {
+    public User update(Integer id, User userDetails, boolean byAdmin) {
         User user = findById(id);
 
         user.setName(userDetails.getName());
@@ -54,8 +54,10 @@ public class UserService {
         user.setStatusEmoji(userDetails.getStatusEmoji());
         user.setStatusText(userDetails.getStatusText());
         user.setIsOnline(userDetails.getIsOnline());
-        user.setIsAdmin(userDetails.getIsAdmin());
-        user.setActive(userDetails.getActive());
+        if (byAdmin) {
+            user.setIsAdmin(userDetails.getIsAdmin());
+            user.setActive(userDetails.getActive());
+        }
 
         if (userDetails.getIsOnline() != null && userDetails.getIsOnline()) {
             user.setLastActiveAt(LocalDateTime.now());
